@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>丸太価格予測ダッシュボード</title>
+    <style>
+        /* 最初は両方の画面を非表示にしておく */
+        #setup-screen, #main-screen {
+            display: none;
+            padding: 20px;
+            font-family: sans-serif;
+        }
+        input[type="text"] {
+            width: 300px;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h2>初期設定</h2>
+        <p>e-StatのアプリケーションIDを入力してください。（お使いのブラウザにのみ保存されます）</p>
+        <input type="text" id="appIdInput" placeholder="アプリケーションIDを入力">
+        <button onclick="saveAppId()">保存して開始</button>
+    </div>
+
+    <div id="main-screen">
+        <h2>丸太価格予測ダッシュボード</h2>
+        <p>ここに自動取得したデータと予測グラフが表示されます。</p>
+        <hr>
+        <button onclick="clearAppId()">設定したIDをリセットする</button>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
