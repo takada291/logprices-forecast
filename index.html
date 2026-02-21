@@ -13,11 +13,31 @@
             margin: auto;
             color: #333;
         }
+        /* ボタンのデザイン */
+        .filter-buttons {
+            margin-bottom: 15px;
+        }
+        .filter-buttons button {
+            padding: 8px 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border: 1px solid #007bff;
+            color: #007bff;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        .filter-buttons button:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+        
         .chart-container {
             position: relative;
             height: 60vh;
             width: 100%;
-            margin-top: 20px;
         }
         .ai-insight {
             background-color: #f0f8ff;
@@ -30,7 +50,6 @@
             margin-top: 0;
             color: #0056b3;
         }
-        /* テキストファイルの改行をそのまま表示するための設定 */
         #prediction-text {
             white-space: pre-wrap;
             line-height: 1.6;
@@ -39,8 +58,15 @@
 </head>
 <body>
 
-    <h2>📈 丸太価格推移ダッシュボード（全国平均）</h2>
+    <h2>📈 丸太価格推移・予測ダッシュボード（全国平均）</h2>
     <p>農林水産省「木材流通統計調査」に基づく丸太価格の推移です。</p>
+
+    <div class="filter-buttons">
+        <button onclick="filterCategory('all')">すべて表示</button>
+        <button onclick="filterCategory('seizai')">製材用</button>
+        <button onclick="filterCategory('gohan')">合板用</button>
+        <button onclick="filterCategory('chip')">チップ用</button>
+    </div>
 
     <div class="chart-container">
         <canvas id="priceChart"></canvas>
