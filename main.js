@@ -1,3 +1,5 @@
+let myChart = null; // グラフ全体を操作するための変数
+
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboardData();
 });
@@ -18,16 +20,15 @@ async function loadDashboardData() {
         if (!txtResponse.ok) throw new Error('insight.txtが見つかりません');
         const insightText = await txtResponse.text();
         
-        // 画面の該当箇所にテキストを差し込む
         document.getElementById('prediction-text').innerText = insightText;
 
     } catch (error) {
         console.error("データの読み込みエラー:", error);
-        document.getElementById('prediction-text').innerText = "データの読み込みに失敗しました。ファイルが存在するか確認してください。";
+        document.getElementById('prediction-text').innerText = "データの読み込みに失敗しました。data.csv または insight.txt が存在するか確認してください。";
     }
 }
 
-// 簡単なCSVパーサー（先ほどと同じです）
+// 簡単なCSVパーサー
 function parseCSV(csvText) {
     const lines = csvText.trim().split('\n');
     const headers = lines[0].split(',');
@@ -35,16 +36,22 @@ function parseCSV(csvText) {
     const labels = [];
     const datasets = [];
 
+    // データセットの箱を用意
     for (let i = 1; i < headers.length; i++) {
         datasets.push({
             label: headers[i].trim(),
             data: [],
             borderWidth: 2,
-            tension: 0.1
+            tension: 0.1,
+            hidden: false // 初期状態はすべて表示
         });
     }
 
+    // データを格納
     for (let i = 1; i < lines.length; i++) {
+        // 空行対策
+        if (lines[i].trim() === '') continue;
+
         const row = lines[i].split(',');
         if (row.length === headers.length) {
             labels.push(row[0].trim());
@@ -58,11 +65,16 @@ function parseCSV(csvText) {
     return { labels, datasets };
 }
 
-// Chart.jsを使ったグラフ描画（先ほどと同じです）
+// Chart.jsを使ったグラフ描画
 function drawChart(parsedData) {
     const ctx = document.getElementById('priceChart').getContext('2d');
 
-    new Chart(ctx, {
+    // 既にグラフがあれば破棄して再描画
+    if (myChart) {
+        myChart.destroy();
+    }
+
+    myChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: parsedData.labels,
@@ -83,4 +95,30 @@ function drawChart(parsedData) {
             }
         }
     });
+}
+
+// ボタンを押したときの表示切り替え処理
+function filterCategory(category) {
+    if (!myChart) return;
+
+    myChart.data.datasets.forEach((dataset) => {
+        const label = dataset.label;
+        let show = false;
+
+        // カテゴリーに応じた表示判定
+        if (category === 'all') {
+            show = true;
+        } else if (category === 'gohan') {
+            show = label.includes('合板');
+        } else if (category === 'chip') {
+            show = label.includes('チップ');
+        } else if (category === 'seizai') {
+            show = !label.includes('合板') && !label.includes('チップ');
+        }
+
+        // hiddenプロパティを切り替えて表示/非表示をコントロール
+        dataset.hidden = !show; 
+    });
+
+    myChart.update(); // 変更をグラフに反映
 }
