@@ -9,13 +9,13 @@
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
             padding: 20px;
-            max-width: 1000px; /* PCで見やすい幅に制限 */
+            max-width: 1000px;
             margin: auto;
             color: #333;
         }
         .chart-container {
             position: relative;
-            height: 60vh; /* 画面の高さの60% */
+            height: 60vh;
             width: 100%;
             margin-top: 20px;
         }
@@ -30,6 +30,11 @@
             margin-top: 0;
             color: #0056b3;
         }
+        /* テキストファイルの改行をそのまま表示するための設定 */
+        #prediction-text {
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
     </style>
 </head>
 <body>
@@ -43,10 +48,7 @@
 
     <div class="ai-insight">
         <h3>💡 AIによる今後のトレンド予測</h3>
-        <p id="prediction-text">
-            ※ここに高田さんがGeminiに分析させた結果（向こう3ヶ月の予測など）を記述します。
-            CSVファイルとは別に、毎月このテキスト部分も更新する運用を想定しています。
-        </p>
+        <p id="prediction-text">予測データを読み込み中...</p>
     </div>
 
     <script src="main.js"></script>
