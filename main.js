@@ -8,7 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadDashboardData() {
     try {
         // 1. CSVデータの読み込みとグラフ描画
-        const csvResponse = await fetch('data.csv');
+        //const csvResponse = await fetch('data.csv');
+        // スプレッドシートのCSV公開URL（コピーした長〜いURLをシングルクォーテーションの中に貼り付けます）
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2AWXZa2ue3nvb2vg8XW8cAu71uFZPXCFYPOgwWtDrQkdCo5aUGNZujbsyP_-8dWOVl1Npjj6rnbt_/pub?gid=0&single=true&output=csv';
+
+        // CSVデータの読み込みとグラフ描画
+        const csvResponse = await fetch(SHEET_CSV_URL);
+        
         if (!csvResponse.ok) throw new Error('data.csvが見つかりません');
         const csvText = await csvResponse.text();
         
@@ -122,3 +128,4 @@ function filterCategory(category) {
 
     myChart.update(); // 変更をグラフに反映
 }
+
