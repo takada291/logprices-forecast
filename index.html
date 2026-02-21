@@ -3,39 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>丸太価格予測ダッシュボード</title>
+    <title>丸太価格推移・予測ダッシュボード</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* 最初は両方の画面を非表示にしておく */
-        #setup-screen, #main-screen {
-            display: none;
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
             padding: 20px;
-            font-family: sans-serif;
+            max-width: 1000px; /* PCで見やすい幅に制限 */
+            margin: auto;
+            color: #333;
         }
-        input[type="text"] {
-            width: 300px;
-            padding: 8px;
-            margin-bottom: 10px;
+        .chart-container {
+            position: relative;
+            height: 60vh; /* 画面の高さの60% */
+            width: 100%;
+            margin-top: 20px;
         }
-        button {
-            padding: 8px 16px;
-            cursor: pointer;
+        .ai-insight {
+            background-color: #f0f8ff;
+            border-left: 5px solid #007bff;
+            padding: 15px 20px;
+            margin-top: 30px;
+            border-radius: 4px;
+        }
+        .ai-insight h3 {
+            margin-top: 0;
+            color: #0056b3;
         }
     </style>
 </head>
 <body>
 
-    <div id="setup-screen">
-        <h2>初期設定</h2>
-        <p>e-StatのアプリケーションIDを入力してください。（お使いのブラウザにのみ保存されます）</p>
-        <input type="text" id="appIdInput" placeholder="アプリケーションIDを入力">
-        <button onclick="saveAppId()">保存して開始</button>
+    <h2>📈 丸太価格推移ダッシュボード（全国平均）</h2>
+    <p>農林水産省「木材流通統計調査」に基づく丸太価格の推移です。</p>
+
+    <div class="chart-container">
+        <canvas id="priceChart"></canvas>
     </div>
 
-    <div id="main-screen">
-        <h2>丸太価格予測ダッシュボード</h2>
-        <p>ここに自動取得したデータと予測グラフが表示されます。</p>
-        <hr>
-        <button onclick="clearAppId()">設定したIDをリセットする</button>
+    <div class="ai-insight">
+        <h3>💡 AIによる今後のトレンド予測</h3>
+        <p id="prediction-text">
+            ※ここに高田さんがGeminiに分析させた結果（向こう3ヶ月の予測など）を記述します。
+            CSVファイルとは別に、毎月このテキスト部分も更新する運用を想定しています。
+        </p>
     </div>
 
     <script src="main.js"></script>
