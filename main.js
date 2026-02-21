@@ -1,52 +1,94 @@
-// ブラウザに保存するためのキー（名前）
-const STORAGE_KEY = 'estat_app_id';
-
-// 画面読み込み時の処理
+// 画面が読み込まれたら実行
 document.addEventListener('DOMContentLoaded', () => {
-    // ブラウザの記憶領域からIDを取り出す
-    const savedAppId = localStorage.getItem(STORAGE_KEY);
-
-    if (savedAppId) {
-        // IDが既に保存されていれば、メイン画面を表示
-        showMainScreen();
-        console.log("保存されたIDを使ってデータの自動取得を開始します...");
-        // ※後ほど、ここにe-Stat APIを叩く関数を追加します
-        // fetchLogPrices(savedAppId);
-    } else {
-        // 保存されていなければ、設定画面を表示
-        document.getElementById('setup-screen').style.display = 'block';
-    }
+    loadDataAndDrawChart();
 });
 
-// 「保存して開始」ボタンが押された時の処理
-function saveAppId() {
-    const inputId = document.getElementById('appIdInput').value.trim();
-    
-    if (inputId) {
-        // 入力されたIDをブラウザに記憶させる
-        localStorage.setItem(STORAGE_KEY, inputId);
-        
-        // 設定画面を隠してメイン画面を表示
-        document.getElementById('setup-screen').style.display = 'none';
-        showMainScreen();
-        
-        console.log("新しいIDを保存しました。データの取得を開始します...");
-        // ※後ほど、ここにe-Stat APIを叩く関数を追加します
-        // fetchLogPrices(inputId);
-    } else {
-        alert('アプリケーションIDを入力してください。');
+// CSVを読み込んでグラフを描画するメイン関数
+async function loadDataAndDrawChart() {
+    try {
+        // 同じフォルダにある 'data.csv' を読み込む
+        const response = await fetch('data.csv');
+        const csvText = await response.text();
+
+        // CSVテキストをパース（解析）する
+        const parsedData = parseCSV(csvText);
+
+        // グラフを描画する
+        drawChart(parsedData);
+
+    } catch (error) {
+        console.error("データの読み込みに失敗しました:", error);
+        alert("データの読み込みに失敗しました。ファイル名が data.csv になっているか確認してください。");
     }
 }
 
-// メイン画面を表示する処理
-function showMainScreen() {
-    document.getElementById('main-screen').style.display = 'block';
+// 簡単なCSVパーサー（カンマ区切りで配列に変換）
+function parseCSV(csvText) {
+    const lines = csvText.trim().split('\n');
+    const headers = lines[0].split(','); // 1行目はヘッダー（品目名）
+
+    const labels = []; // X軸のラベル（年月）
+    const datasets = []; // グラフのデータセット
+
+    // ヘッダーの数（最初の「年月」列を除いた分）だけデータセットの箱を用意
+    for (let i = 1; i < headers.length; i++) {
+        datasets.push({
+            label: headers[i].trim(),
+            data: [],
+            borderWidth: 2,
+            tension: 0.1 // 線の滑らかさ
+        });
+    }
+
+    // 2行目以降のデータをループ処理
+    for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(',');
+        if (row.length === headers.length) {
+            labels.push(row[0].trim()); // 1列目は年月
+
+            // 2列目以降は数値として各データセットに追加
+            for (let j = 1; j < row.length; j++) {
+                // カンマ等の余計な文字があれば取り除いて数値化
+                const value = parseInt(row[j].replace(/[^0-9]/g, ''), 10);
+                datasets[j - 1].data.push(value);
+            }
+        }
+    }
+
+    return { labels, datasets };
 }
 
-// 「リセット」ボタンが押された時の処理（PCを変えた時やIDを間違えた時用）
-function clearAppId() {
-    if(confirm('保存されているIDを削除して初期画面に戻りますか？')) {
-        localStorage.removeItem(STORAGE_KEY);
-        location.reload(); // 画面を再読み込み
-    }
+// Chart.jsを使って折れ線グラフを描画
+function drawChart(parsedData) {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'line', // 折れ線グラフ
+        data: {
+            labels: parsedData.labels,
+            datasets: parsedData.datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top', // 凡例の位置
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false, // 0から始めない（価格変動を見やすくするため）
+                    title: {
+                        display: true,
+                        text: '価格 (円/㎥)'
+                    }
+                }
+            }
+        }
+    });
 }
