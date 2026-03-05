@@ -67,7 +67,16 @@ function parseCSV(csvText) {
             }
         }
     }
-
+// ▼▼▼ ここから追加：直近12ヶ月分だけを残す処理 ▼▼▼
+    const MAX_MONTHS = 12;
+    if (labels.length > MAX_MONTHS) {
+        // 先頭の古いデータを切り捨てる
+        labels.splice(0, labels.length - MAX_MONTHS);
+        datasets.forEach(dataset => {
+            dataset.data.splice(0, dataset.data.length - MAX_MONTHS);
+        });
+    }
+    // ▲▲▲ ここまで追加 ▲▲▲
     return { labels, datasets };
 }
 
@@ -128,4 +137,5 @@ function filterCategory(category) {
 
     myChart.update(); // 変更をグラフに反映
 }
+
 
