@@ -1,28 +1,29 @@
-let myChart = null; // グラフ全体を操作するための変数
+let myChart = null; 
+
+// ▼▼ ご自身のスプレッドシートのCSV公開URLを入れてください ▼▼
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2AWXZa2ue3nvb2vg8XW8cAu71uFZPXCFYPOgwWtDrQkdCo5aUGNZujbsyP_-8dWOVl1Npjj6rnbt_/pub?gid=0&single=true&output=csv';
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboardData();
 });
 
-// CSVとテキストファイルを両方読み込むメイン関数
 async function loadDashboardData() {
     try {
-        // 1. CSVデータの読み込みとグラフ描画
-        //const csvResponse = await fetch('data.csv');
-        // スプレッドシートのCSV公開URL（コピーした長〜いURLをシングルクォーテーションの中に貼り付けます）
-        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2AWXZa2ue3nvb2vg8XW8cAu71uFZPXCFYPOgwWtDrQkdCo5aUGNZujbsyP_-8dWOVl1Npjj6rnbt_/pub?gid=0&single=true&output=csv';
+        // キャッシュ（古いデータ）を無視して必ず最新を取りに行くおまじない
+        const noCacheParam = `?_=${Date.now()}`;
+        const csvFetchUrl = SHEET_CSV_URL.includes('?') ? `${SHEET_CSV_URL}&_=${Date.now()}` : `${SHEET_CSV_URL}${noCacheParam}`;
 
-        // CSVデータの読み込みとグラフ描画
-        const csvResponse = await fetch(SHEET_CSV_URL);
-        
-        if (!csvResponse.ok) throw new Error('data.csvが見つかりません');
+        // 1. CSVデータの読み込み
+        const csvResponse = await fetch(csvFetchUrl, { cache: 'no-store' });
+        if (!csvResponse.ok) throw new Error('CSVの取得に失敗しました');
         const csvText = await csvResponse.text();
         
         const parsedData = parseCSV(csvText);
         drawChart(parsedData);
 
-        // 2. AI予測テキスト（insight.txt）の読み込みと表示
-        const txtResponse = await fetch('insight.txt');
+        // 2. AI予測テキスト（insight.txt）の読み込み（こちらも強制最新）
+        const txtResponse = await fetch(`insight.txt${noCacheParam}`, { cache: 'no-store' });
         if (!txtResponse.ok) throw new Error('insight.txtが見つかりません');
         const insightText = await txtResponse.text();
         
@@ -30,64 +31,80 @@ async function loadDashboardData() {
 
     } catch (error) {
         console.error("データの読み込みエラー:", error);
-        document.getElementById('prediction-text').innerText = "データの読み込みに失敗しました。data.csv または insight.txt が存在するか確認してください。";
+        document.getElementById('prediction-text').innerText = "データの読み込みに失敗しました。";
     }
 }
 
-// 簡単なCSVパーサー
+// カンマ付き数字（"15,700"など）にも対応したCSV分割関数
+function splitCSVRow(text) {
+    let result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+        let char = text[i];
+        if (char === '"') {
+            inQuotes = !inQuotes; // ダブルクォーテーションの中かどうかを判定
+        } else if (char === ',' && !inQuotes) {
+            result.push(current);
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    result.push(current);
+    return result;
+}
+
+// CSVパーサー（カンマ付き数字＆最新12ヶ月抽出対応）
 function parseCSV(csvText) {
     const lines = csvText.trim().split('\n');
-    const headers = lines[0].split(',');
+    const headers = splitCSVRow(lines[0].trim());
 
-    const labels = [];
+    let labels = [];
     const datasets = [];
 
-    // データセットの箱を用意
     for (let i = 1; i < headers.length; i++) {
         datasets.push({
             label: headers[i].trim(),
             data: [],
             borderWidth: 2,
             tension: 0.1,
-            hidden: false // 初期状態はすべて表示
+            hidden: false 
         });
     }
 
-    // データを格納
     for (let i = 1; i < lines.length; i++) {
-        // 空行対策
         if (lines[i].trim() === '') continue;
 
-        const row = lines[i].split(',');
+        // 改良版の分割関数を使って行を読み込む
+        const row = splitCSVRow(lines[i].trim());
+        
         if (row.length === headers.length) {
             labels.push(row[0].trim());
             for (let j = 1; j < row.length; j++) {
+                // カンマやダブルクォーテーションを取り除いて純粋な数字にする
                 const value = parseInt(row[j].replace(/[^0-9]/g, ''), 10);
-                datasets[j - 1].data.push(value);
+                datasets[j - 1].data.push(isNaN(value) ? 0 : value);
             }
         }
     }
-// ▼▼▼ ここから追加：直近12ヶ月分だけを残す処理 ▼▼▼
+
+    // 直近12ヶ月分だけを残す
     const MAX_MONTHS = 12;
     if (labels.length > MAX_MONTHS) {
-        // 先頭の古いデータを切り捨てる
-        labels.splice(0, labels.length - MAX_MONTHS);
+        labels = labels.slice(-MAX_MONTHS);
         datasets.forEach(dataset => {
-            dataset.data.splice(0, dataset.data.length - MAX_MONTHS);
+            dataset.data = dataset.data.slice(-MAX_MONTHS);
         });
     }
-    // ▲▲▲ ここまで追加 ▲▲▲
+
     return { labels, datasets };
 }
 
-// Chart.jsを使ったグラフ描画
+// グラフ描画
 function drawChart(parsedData) {
     const ctx = document.getElementById('priceChart').getContext('2d');
-
-    // 既にグラフがあれば破棄して再描画
-    if (myChart) {
-        myChart.destroy();
-    }
+    if (myChart) myChart.destroy();
 
     myChart = new Chart(ctx, {
         type: 'line',
@@ -112,30 +129,18 @@ function drawChart(parsedData) {
     });
 }
 
-// ボタンを押したときの表示切り替え処理
+// 絞り込みボタン機能
 function filterCategory(category) {
     if (!myChart) return;
-
     myChart.data.datasets.forEach((dataset) => {
         const label = dataset.label;
         let show = false;
-
-        // カテゴリーに応じた表示判定
-        if (category === 'all') {
-            show = true;
-        } else if (category === 'gohan') {
-            show = label.includes('合板');
-        } else if (category === 'chip') {
-            show = label.includes('チップ');
-        } else if (category === 'seizai') {
-            show = !label.includes('合板') && !label.includes('チップ');
-        }
-
-        // hiddenプロパティを切り替えて表示/非表示をコントロール
+        if (category === 'all') show = true;
+        else if (category === 'gohan') show = label.includes('合板');
+        else if (category === 'chip') show = label.includes('チップ');
+        else if (category === 'seizai') show = !label.includes('合板') && !label.includes('チップ');
+        
         dataset.hidden = !show; 
     });
-
-    myChart.update(); // 変更をグラフに反映
+    myChart.update();
 }
-
-
